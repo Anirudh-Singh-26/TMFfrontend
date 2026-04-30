@@ -32,8 +32,20 @@ export default function Signup() {
   };
 
   return (
-    <div className="page-wrapper">
-      <div className="main-content" style={{ maxWidth: 400 }}>
+    <div
+      className="page-wrapper"
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        flexDirection: "column",
+        marginTop: "70px",
+      }}
+    >
+      <h1 style={{ marginBottom: "18px", fontSize: "64px" }}>Welcome</h1>
+
+      <div className="main-content" style={{ width: "100%", maxWidth: 400 }}>
         <div className="card">
           <h2 className="page-title">Signup</h2>
 

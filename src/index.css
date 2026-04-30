@@ -285,3 +285,16 @@ select.input option {
   from { transform: translateY(10px); opacity: 0; }
   to { transform: translateY(0); opacity: 1; }
 }
+
+
+.badge-member {
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.badge-admin {
+  background: rgba(91, 141, 238, 0.12);
+  color: var(--accent);
+  border: 1px solid rgba(91, 141, 238, 0.25);
+}

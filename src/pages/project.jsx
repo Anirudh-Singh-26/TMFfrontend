@@ -1,4 +1,3 @@
-// src/pages/ProjectDetails.jsx
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { taskApi, projectApi } from "../services/api";
@@ -12,7 +11,6 @@ export default function ProjectDetails() {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // create task
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
 
@@ -21,11 +19,8 @@ export default function ProjectDetails() {
     description: "",
     assignedTo: "",
     dueDate: "",
+    priority: "medium",
   });
-
-  // add member
-  const [memberEmail, setMemberEmail] = useState("");
-  const [addingMember, setAddingMember] = useState(false);
 
   useEffect(() => {
     load();
@@ -34,7 +29,6 @@ export default function ProjectDetails() {
   const load = async () => {
     try {
       setLoading(true);
-
       const p = await projectApi.getOne(id);
       const t = await taskApi.getByProject(id);
 
@@ -45,28 +39,8 @@ export default function ProjectDetails() {
     }
   };
 
-  // ---------------- ADD MEMBER ----------------
-  const handleAddMember = async () => {
-    if (!memberEmail.trim()) return;
-
-    try {
-      setAddingMember(true);
-
-      await projectApi.addMember(id, memberEmail);
-
-      setMemberEmail("");
-      await load();
-    } catch (err) {
-      alert(err.message);
-    } finally {
-      setAddingMember(false);
-    }
-  };
-
-  // ---------------- CREATE TASK ----------------
   const handleCreateTask = async (e) => {
     e.preventDefault();
-
     if (!form.title.trim()) return;
 
     try {
@@ -77,6 +51,7 @@ export default function ProjectDetails() {
         description: form.description,
         assignedTo: form.assignedTo || undefined,
         dueDate: form.dueDate || undefined,
+        priority: form.priority,
       });
 
       setForm({
@@ -84,6 +59,7 @@ export default function ProjectDetails() {
         description: "",
         assignedTo: "",
         dueDate: "",
+        priority: "medium",
       });
 
       setShowCreate(false);
@@ -95,7 +71,6 @@ export default function ProjectDetails() {
     }
   };
 
-  // ---------------- UPDATE STATUS / ASSIGN ----------------
   const updateTask = async (taskId, payload) => {
     try {
       await taskApi.update(taskId, payload);
@@ -105,7 +80,6 @@ export default function ProjectDetails() {
     }
   };
 
-  // ---------------- DELETE TASK ----------------
   const deleteTask = async (taskId) => {
     if (!window.confirm("Delete this task?")) return;
 
@@ -139,45 +113,7 @@ export default function ProjectDetails() {
         )}
       </div>
 
-      {/* ---------------- ADD MEMBER ---------------- */}
-      {user.role === "admin" && (
-        <div className="card mt-16">
-          <h4>Add Member</h4>
-
-          <div className="flex gap-12 mt-8">
-            <input
-              className="input"
-              placeholder="Enter user email"
-              value={memberEmail}
-              onChange={(e) => setMemberEmail(e.target.value)}
-            />
-
-            <button
-              className="btn btn-primary"
-              onClick={handleAddMember}
-              disabled={addingMember}
-            >
-              {addingMember ? "Adding..." : "Add"}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ---------------- MEMBERS LIST ---------------- */}
-      <div className="mt-24">
-        <h4>Members</h4>
-
-        <div className="flex gap-12 mt-8">
-          {Array.isArray(project?.members) &&
-            project.members.map((m, index) => (
-              <span key={m?._id || index} className="badge">
-                {index + 1}. {m?.name || "Unknown"}
-              </span>
-            ))}
-        </div>
-      </div>
-
-      {/* ---------------- CREATE TASK ---------------- */}
+      {/* CREATE TASK */}
       {showCreate && (
         <div className="card mt-16">
           <h3>Create Task</h3>
@@ -201,6 +137,19 @@ export default function ProjectDetails() {
                   setForm({ ...form, description: e.target.value })
                 }
               />
+            </div>
+
+            <div className="input-group">
+              <label className="label">Priority</label>
+              <select
+                className="input"
+                value={form.priority}
+                onChange={(e) => setForm({ ...form, priority: e.target.value })}
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+              </select>
             </div>
 
             <div className="input-group">
@@ -248,7 +197,7 @@ export default function ProjectDetails() {
         </div>
       )}
 
-      {/* ---------------- TASK LIST ---------------- */}
+      {/* TASK LIST */}
       <div className="mt-24">
         {tasks.length === 0 ? (
           <div className="empty-state">
@@ -266,30 +215,50 @@ export default function ProjectDetails() {
 
             return (
               <div key={t._id} className="card mt-16 flex justify-between">
+                {/* LEFT */}
                 <div>
                   <div>{t.title}</div>
 
                   <div className="text-xs text-muted mt-8">
                     Assigned: {t.assignedTo?.name || "None"}
                   </div>
+
+                  <div className="text-xs text-muted mt-8">
+                    Due:{" "}
+                    {t.dueDate
+                      ? new Date(t.dueDate).toLocaleDateString()
+                      : "No deadline"}
+                  </div>
+
+                  <div className="text-xs mt-8">
+                    Priority:{" "}
+                    <span className={`badge badge-${t.priority}`}>
+                      {t.priority}
+                    </span>
+                  </div>
                 </div>
 
+                {/* RIGHT */}
                 <div className="flex gap-8 items-center">
                   {/* STATUS */}
-                  <select
-                    className="input"
-                    value={t.status}
-                    disabled={!canEdit}
-                    onChange={(e) =>
-                      updateTask(t._id, { status: e.target.value })
-                    }
-                  >
-                    <option value="todo">Todo</option>
-                    <option value="in-progress">In Progress</option>
-                    <option value="done">Done</option>
-                  </select>
+                  {canEdit && (
+                    <select
+                      className="input"
+                      value={t.status}
+                      disabled={isOverdue}
+                      onChange={(e) =>
+                        updateTask(t._id, {
+                          status: e.target.value,
+                        })
+                      }
+                    >
+                      <option value="todo">Todo</option>
+                      <option value="in-progress">In Progress</option>
+                      <option value="done">Done</option>
+                    </select>
+                  )}
 
-                  {/* REASSIGN (ADMIN ONLY) */}
+                  {/* ADMIN: ASSIGN */}
                   {user.role === "admin" && (
                     <select
                       className="input"
@@ -307,6 +276,24 @@ export default function ProjectDetails() {
                         </option>
                       ))}
                     </select>
+                  )}
+
+                  {/* ADMIN: CHANGE DATE */}
+                  {user.role === "admin" && (
+                    <input
+                      type="date"
+                      className="input"
+                      value={
+                        t.dueDate
+                          ? new Date(t.dueDate).toISOString().split("T")[0]
+                          : ""
+                      }
+                      onChange={(e) =>
+                        updateTask(t._id, {
+                          dueDate: e.target.value || null,
+                        })
+                      }
+                    />
                   )}
 
                   {/* BADGE */}

@@ -13,6 +13,7 @@ export default function ProjectDetails() {
 
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [memberEmail, setMemberEmail] = useState("");
 
   const [form, setForm] = useState({
     title: "",
@@ -196,6 +197,81 @@ export default function ProjectDetails() {
           </form>
         </div>
       )}
+
+      {/* ADD MEMBER */}
+      {user.role === "admin" && (
+        <div className="card mt-16">
+          <h4>Add Member</h4>
+
+          <div className="flex gap-12 mt-8">
+            <input
+              className="input"
+              placeholder="Enter user email"
+              value={memberEmail || ""}
+              onChange={(e) => setMemberEmail(e.target.value)}
+            />
+
+            <button
+              className="btn btn-primary"
+              onClick={async () => {
+                if (!memberEmail.trim()) return;
+
+                try {
+                  await projectApi.addMember(project._id, memberEmail);
+                  setMemberEmail("");
+                  await load();
+                } catch (err) {
+                  alert(err.message);
+                }
+              }}
+            >
+              Add
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* MEMBERS */}
+      <div className="mt-24">
+        <h4>Members</h4>
+
+        <div className="flex gap-12 mt-8">
+          {project.members?.map((m, index) => {
+            const isOwner = project.owner === m._id;
+            const isAdminUser = m.name?.toLowerCase() === "admin user";
+
+            const canRemove = user.role === "admin" && !isOwner && !isAdminUser;
+
+            return (
+              <div key={m._id} className="flex items-center gap-8">
+                <span className="badge">
+                  {index + 1}. {m.name}
+                  {isOwner && " (Owner)"}
+                </span>
+
+                {/* REMOVE BUTTON */}
+                {canRemove && (
+                  <button
+                    className="btn btn-danger btn-sm"
+                    onClick={async () => {
+                      if (!window.confirm("Remove this member?")) return;
+
+                      try {
+                        await projectApi.removeMember(project._id, m._id);
+                        await load();
+                      } catch (err) {
+                        alert(err.message);
+                      }
+                    }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       {/* TASK LIST */}
       <div className="mt-24">
